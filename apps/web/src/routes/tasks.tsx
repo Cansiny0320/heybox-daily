@@ -55,16 +55,21 @@ function Dashboard() {
     },
     [navigate, setAccount, loader],
   );
-  const pollingInterval = dashboardPollInterval(data?.today);
+  const pollingInterval = error ? 60_000 : dashboardPollInterval(data?.today);
   useEffect(() => {
     void refresh();
     const focus = () => {
       void refresh();
     };
+    const visible = () => {
+      if (document.visibilityState === "visible") focus();
+    };
     window.addEventListener("focus", focus);
+    document.addEventListener("visibilitychange", visible);
     return () => {
       requestId.current++;
       window.removeEventListener("focus", focus);
+      document.removeEventListener("visibilitychange", visible);
     };
   }, [refresh]);
   useEffect(() => {
@@ -220,7 +225,7 @@ function Dashboard() {
           <Rewards result={today.result} />
         </div>
       )}
-      <Activities key={data.account} account={data.account} expired={expired} />
+      <Activities key={`${data.account}:${expired}`} account={data.account} expired={expired} />
     </section>
   );
 }

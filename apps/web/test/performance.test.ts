@@ -212,10 +212,14 @@ test("cached statistics retain the five-minute browser TTL when Cloudflare rewri
 
 test("future retries poll slowly until due while running work polls quickly", () => {
   const today = dashboard("queued").today!;
-  assert.equal(dashboardPollInterval({ ...today, retryAt: 60001 }, 1), 60000);
-  assert.equal(dashboardPollInterval({ ...today, retryAt: 60001 }, 60001), 5000);
-  assert.equal(dashboardPollInterval({ ...today, retryAt: null }, 1), 5000);
-  assert.equal(dashboardPollInterval({ ...today, status: "running", retryAt: 60001 }, 1), 5000);
-  assert.equal(dashboardPollInterval({ ...today, status: "completed" }, 1), 60000);
-  assert.equal(dashboardPollInterval(undefined, 1), 60000);
+  const now = Date.parse("2026-10-27T08:00:00+08:00");
+  assert.equal(dashboardPollInterval({ ...today, retryAt: now + 60000 }, now), 60000);
+  assert.equal(dashboardPollInterval({ ...today, retryAt: now }, now), 5000);
+  assert.equal(dashboardPollInterval({ ...today, retryAt: null }, now), 5000);
+  assert.equal(
+    dashboardPollInterval({ ...today, status: "running", retryAt: now + 60000 }, now),
+    5000,
+  );
+  assert.equal(dashboardPollInterval({ ...today, status: "completed" }, now), 300000);
+  assert.equal(dashboardPollInterval(undefined, now), 60000);
 });

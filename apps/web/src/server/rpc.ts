@@ -1,6 +1,6 @@
 import { os, ORPCError } from "@orpc/server";
 import { z } from "zod";
-import { createAuth } from "./auth.ts";
+import { sessionAuth } from "./session-auth.ts";
 import { Store } from "@heybox/hosting/store";
 import type { Env } from "./env.ts";
 import { notifyRunnerInBackground } from "./notify.ts";
@@ -10,7 +10,7 @@ import { activityRequest } from "./activities.ts";
 const authenticated = os
   .$context<{ env: Env; request: Request; execution: Pick<ExecutionContext, "waitUntil"> }>()
   .use(async ({ context, next }) => {
-    const session = await createAuth(context.env, context.execution).api.getSession({
+    const session = await sessionAuth(context.env).api.getSession({
       headers: context.request.headers,
     });
     if (!session) throw new ORPCError("UNAUTHORIZED", { message: "请先登录" });

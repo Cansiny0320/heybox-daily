@@ -15,7 +15,7 @@ const actionNames = {
   ended: "已结束",
 };
 export function Activities({ account, expired }: { account: string; expired: boolean }) {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   const [items, setItems] = useState<ActivityView[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
@@ -24,11 +24,13 @@ export function Activities({ account, expired }: { account: string; expired: boo
   const pending = useRef(false);
   useEffect(() => {
     active.current = true;
-    void refresh();
     return () => {
       active.current = false;
     };
-  }, [account, expired]);
+  }, [account]);
+  useEffect(() => {
+    if (open && !expired && items === null) void refresh();
+  }, [open, expired]);
   async function refresh() {
     if (pending.current || expired) return;
     pending.current = true;
@@ -88,7 +90,6 @@ export function Activities({ account, expired }: { account: string; expired: boo
             className="flex items-center gap-2 text-2xl font-semibold tracking-tight"
             onClick={() => {
               setOpen((value) => !value);
-              if (!open && items === null) void refresh();
             }}
           >
             抽奖活动

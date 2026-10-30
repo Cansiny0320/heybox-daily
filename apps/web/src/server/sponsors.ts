@@ -13,13 +13,25 @@ export async function sponsorContent(
     return new Response(null, { status: 405, headers: { Allow: "GET, HEAD" } });
 
   if (url.pathname === "/api/sponsors") {
+    const key = new Request(new URL(url.pathname, url.origin));
+    const cached = await cache.match(key).catch(() => undefined);
+    if (cached) {
+      const response = new Response(request.method === "HEAD" ? null : cached.body, cached);
+      response.headers.set("Cache-Control", "public, max-age=60");
+      return response;
+    }
     let sponsors = [] as ReturnType<typeof sponsorsSchema.parse>;
+    let valid = false;
     try {
       sponsors = sponsorsSchema.parse((await env.SITE_CONFIG?.get("sponsors", "json")) ?? []);
+      valid = !!env.SITE_CONFIG;
     } catch {
       console.error("Unable to read valid sponsor configuration from KV");
     }
-    const response = Response.json(sponsors, { headers: { "Cache-Control": "no-store" } });
+    const response = Response.json(sponsors, {
+      headers: { "Cache-Control": valid ? "public, max-age=60" : "no-store" },
+    });
+    if (valid) execution.waitUntil(cache.put(key, response.clone()).catch(() => {}));
     return request.method === "HEAD" ? new Response(null, response) : response;
   }
 

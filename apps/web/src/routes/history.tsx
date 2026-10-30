@@ -1,3 +1,4 @@
+import { historyPollInterval } from "../lib/dashboard-loader";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAccount } from "../components/layout";
@@ -48,22 +49,24 @@ function History() {
     const focus = () => {
       void refresh();
     };
+    const visible = () => {
+      if (document.visibilityState === "visible") focus();
+    };
     window.addEventListener("focus", focus);
+    document.addEventListener("visibilitychange", visible);
     return () => {
       requestId.current++;
       window.removeEventListener("focus", focus);
+      document.removeEventListener("visibilitychange", visible);
     };
   }, [refresh]);
-  const active = data?.records.some((row) => row.status === "queued" || row.status === "running");
+  const pollingInterval = error ? 60_000 : historyPollInterval(data?.records);
   useEffect(() => {
-    const timer = window.setInterval(
-      () => {
-        if (document.visibilityState === "visible") void refresh();
-      },
-      active ? 5_000 : 60_000,
-    );
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === "visible") void refresh();
+    }, pollingInterval);
     return () => clearInterval(timer);
-  }, [refresh, active]);
+  }, [refresh, pollingInterval]);
   const loaded = data && (!account || data.account === account.account);
   return (
     <section className="mx-auto max-w-6xl px-6 pt-10 pb-12 sm:px-8 sm:pt-12">

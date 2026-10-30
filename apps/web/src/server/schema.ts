@@ -109,6 +109,7 @@ export const dailyScheduler = sqliteTable(
     id: integer("id").primaryKey(),
     nextStartAt: integer("next_start_at").notNull().default(0),
     nextDispatchAt: integer("next_dispatch_at").notNull().default(0),
+    cooldownUntil: integer("cooldown_until").notNull().default(0),
   },
   (t) => [check("daily_scheduler_singleton", sql`${t.id} = 1`)],
 );
@@ -136,4 +137,16 @@ export const jobAttempts = sqliteTable(
     index("job_attempts_job").on(t.jobId, t.startedAt),
     index("job_attempts_state").on(t.status, t.finishedAt),
   ],
+);
+
+export const dailyRateLimits = sqliteTable(
+  "daily_rate_limits",
+  {
+    userId: text("user_id")
+      .primaryKey()
+      .references(() => user.id, { onDelete: "cascade" }),
+    observedAt: integer("observed_at").notNull(),
+    retryUntil: integer("retry_until").notNull(),
+  },
+  (t) => [index("daily_rate_limits_observed").on(t.observedAt)],
 );

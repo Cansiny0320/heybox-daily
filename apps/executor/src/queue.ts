@@ -15,7 +15,7 @@ export async function dispatchDue(env: Pick<Env, 'DB' | 'DAILY_QUEUE' | 'DAILY_E
   if (count) console.log(JSON.stringify({ event: 'executor_dispatched', count }));
   return count;
 }
-export async function consume(batch: MessageBatch<unknown>, env: Env, execute: (job: Job, key: string, store: Store) => Promise<Outcome & { category?: string }> = executeDaily) {
+export async function consume(batch: MessageBatch<unknown>, env: Env, execute: (job: Job, key: string, store: Store) => Promise<Outcome & { category?: string }> = (job, key, store) => executeDaily(job, key, store, fetch, { signDiagnostics: env.SIGN_DIAGNOSTICS === 'true' })) {
   const store = new Store(env.DB);
   for (const message of batch.messages) {
     const parsed = queueMessageSchema.safeParse(message.body);
@@ -33,8 +33,9 @@ export async function consume(batch: MessageBatch<unknown>, env: Env, execute: (
       }
       const job = await store.claimQueued(parsed.data);
       if (!job) {
-        if (store.nextStartAt !== null) message.retry({ delaySeconds: Math.max(1, Math.ceil((store.nextStartAt - store.now()) / 1000)) });
-        else message.ack();
+        if (store.nextStartAt !== null)
+          await store.deferQueued(parsed.data, Math.max(0, store.nextStartAt - store.now()));
+        message.ack();
         continue;
       }
       let result: Outcome & { category?: string };

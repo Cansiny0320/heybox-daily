@@ -110,11 +110,22 @@ export async function listActivities(client: ActivityClient, account: string,
     if (rows.length < 15) break;
     if (ids.size > 30) throw new ActivityError('activity_invalid');
   }
-  const result: ActivityView[] = [];
-  for (const id of ids) {
-    onStage('list_home');
-    result.push(await inspectActivity(client, account, id));
+  const ordered = [...ids];
+  const result: ActivityView[] = new Array(ordered.length);
+  let cursor = 0;
+  let failure: { error: unknown } | undefined;
+  async function readDetails() {
+    while (!failure && cursor < ordered.length) {
+      const index = cursor++;
+      try {
+        onStage('list_home');
+        result[index] = await inspectActivity(client, account, ordered[index]);
+      } catch (error) { failure ||= { error }; }
+    }
   }
+  // Drain both readers before releasing the activity lease, including on error/cancellation.
+  await Promise.all(Array.from({ length: Math.min(2, ordered.length) }, readDetails));
+  if (failure) throw failure.error;
   return result;
 }
 interface ActivityOptions {

@@ -41,7 +41,7 @@ test('daily trace includes stable attempt identity and excludes raw error messag
   assert.ok(!logs[0].includes('SECRET'));
 });
 
-test('failed initial observation can only become success after a fresh four-task confirmation', async t => {
+test('failed initial observation backs off without another read or claiming success', async t => {
   t.mock.method(console, 'warn', () => {});
   const key = Buffer.alloc(32, 7).toString('base64');
   const credential = encryptCredential(config, key);
@@ -55,14 +55,35 @@ test('failed initial observation can only become success after a fresh four-task
     return Response.json({ status: 'ok', result: String(url).includes('get_sign_state')
       ? { state: 'ok', signed_date: Math.floor((Date.now() / 1000 + 8 * 3600) / 86400) } : taskResult });
   });
-  assert.equal(result.status, 'completed');
-  assert.equal(result.snapshot?.tasks.filter(t => t.state === 'finish').length, 4);
+  assert.equal(result.status, 'failed');
+  assert.equal(calls, 1);
+  assert.equal(result.snapshot, undefined);
   assert.equal(result.coinDelta, undefined);
   assert.equal(result.failure?.httpStatus, 503);
-  assert.equal(result.uncertain, true);
+  assert.equal(result.uncertain, undefined);
   const unconfirmed = await executeDaily(job, key, { heartbeat: async () => true }, async () => new Response('SECRET', { status: 503 }));
   assert.equal(unconfirmed.status, 'failed');
-  assert.equal(unconfirmed.errors?.length, 2);
+  assert.equal(unconfirmed.errors?.length, 1);
   assert.equal(unconfirmed.coinDelta, undefined);
   assert.equal(unconfirmed.snapshot, undefined);
+});
+
+test('a sign write with a lost response still reconciles and never invents rewards', async t => {
+  t.mock.method(console, 'warn', () => {});
+  const key = Buffer.alloc(32, 7).toString('base64');
+  const job = { id: crypto.randomUUID(), lease: crypto.randomUUID(), date: beijingDate(), credential: encryptCredential(config, key) };
+  let wrote = false, reads = 0;
+  const result = await executeDaily(job, key, { heartbeat: async () => true }, async input => {
+    const path = new URL(String(input)).pathname;
+    if (path === '/task/sign_v3/sign') { wrote = true; throw new TypeError('lost response'); }
+    if (path === '/task/list_v2/') {
+      reads++;
+      return Response.json({ status: 'ok', result: { user: { userid: '12345', level_info: { exp: 20, coin: 30 } },
+        task_list: [{ title: '每日任务', tasks: ['1', '19', '31'].map(id => ({ report_extra: { task_id: id }, state: 'finish' })) }] } });
+    }
+    assert.equal(path, '/task/sign_v4/get_sign_state');
+    return Response.json({ status: 'ok', result: { state: 'ok', signed_date: Math.floor((Date.now() / 1000 + 8 * 3600) / 86400) - (wrote ? 0 : 1) } });
+  });
+  assert.equal(result.status, 'completed'); assert.equal(reads, 2);
+  assert.equal(result.uncertain, true); assert.equal(result.coinDelta, undefined);
 });

@@ -41,6 +41,29 @@ export default { ...worker, async fetch(request, env, ctx) {
   if (new URL(request.url).pathname === '/test/quotas') {
     return Response.json({ rejected: await new Store(env.DB).quotas(await request.json()) });
   }
+  if (new URL(request.url).pathname === '/test/cooldown') {
+    let now = Date.now() + 60000;
+    const store = new Store(env.DB, () => now);
+    for (const account of ['900001', '900002', '900003'])
+      await store.enroll({ account, version: crypto.randomUUID(), ciphertext: 'x'.repeat(64) });
+    const messages = await store.reserveDispatch();
+    for (let i = 0; i < 2; i++) {
+      const job = await store.claimQueued(messages[i]);
+      if (!job) throw new Error('fixture should start before cooldown');
+      await store.finish(job.id, job.lease, job.credential.version, { status: 'failed',
+        failure: { category: 'rate_limit', httpStatus: 429, endpoint: '/task/list_v2/', stage: 'inspect', durationMs: 1, retryAfterMs: 120000 } });
+      now += 4000;
+    }
+    const blocked = await store.claimQueued(messages[2]);
+    const resume = store.nextStartAt;
+    const during = await store.reserveDispatch();
+    await store.deferQueued(messages[2], resume - now);
+    now = resume;
+    const replacements = await store.reserveDispatch();
+    const resumed = replacements.length ? await store.claimQueued(replacements[0]) : null;
+    return Response.json({ blocked: blocked === null, pausedDispatches: during.length,
+      resumed: !!resumed, attempts: (await env.DB.prepare('SELECT SUM(attempts) n FROM jobs WHERE user_id IN (?,?,?)').bind('heybox:900001','heybox:900002','heybox:900003').first()).n });
+  }
   if (new URL(request.url).pathname === '/test/seed') {
     const account = (await request.json()).account;
     const credential = encryptCredential({session:{heybox_id:account,pkey:'fixture-key',device_id:'fixture-device',x_xhh_tokenid:'B'+'a'.repeat(88)},device:{model:'test',osVersion:'17'},app:{version:'1.3.398',build:'1142',shaderVersion:'14'}}, env.CREDENTIAL_KEY);
@@ -265,6 +288,8 @@ try {
   await producer.send(delivery);
   await new Promise(r => setTimeout(r, 300));
   assert.equal((await db.prepare('SELECT attempts FROM jobs').first()).attempts, 1); assert.equal(reports, 9);
+  assert.deepEqual(await (await call('/test/cooldown')).json(),
+    { blocked: true, pausedDispatches: 0, resumed: true, attempts: 3 });
   // The independent rollback switch retains the previous serial login contract.
   await runtime.dispose();
   runtime = new Miniflare({ ...options, workers: options.workers.map(worker => ({ ...worker,
@@ -276,5 +301,5 @@ try {
   assert.match(serial.headers.get('server-timing'), /token_http;dur=/);
   assert.ok(!serial.headers.get('server-timing').includes('challenge_prepare'));
   console.log(JSON.stringify({ runtime: 'workerd', bundleBytes: compiled.outputFiles[0].contents.length, mockedUpstreamRequests: upstreamRequests,
-    verified: ['parallel login preparation and rollback switch', 'prepare has no persistent or upstream effects', 'eviction between prepare and begin', 'public inputs cannot replace the private token', 'atomic ordered quotas under concurrent D1 requests', 'correlated login timings through Worker, DO and token service', 'login RSA and encrypted credentials', 'real SQLite DO restart and alarm cleanup', '8 simultaneous independent logins', 'single challenge exclusion', 'global activity limit and per-account lock', 'D1 outbox and real queue consumption', 'daily four-task observation', 'duplicate delivery ignored'], realUpstreamRequests: 0 }));
+    verified: ['parallel login preparation and rollback switch', 'prepare has no persistent or upstream effects', 'eviction between prepare and begin', 'public inputs cannot replace the private token', 'atomic ordered quotas under concurrent D1 requests', 'correlated login timings through Worker, DO and token service', 'login RSA and encrypted credentials', 'real SQLite DO restart and alarm cleanup', '8 simultaneous independent logins', 'single challenge exclusion', 'global activity limit and per-account lock', 'D1 outbox and real queue consumption', 'daily four-task observation', 'duplicate delivery ignored', 'durable HTTP 429 cooldown and deferred message recovery'], realUpstreamRequests: 0 }));
 } finally { releases.forEach(release => release()); await runtime.dispose(); rmSync(directory, { recursive: true, force: true }); }

@@ -1,8 +1,6 @@
 import { betterAuth, type BetterAuthPlugin } from "better-auth";
 import { createAuthEndpoint, APIError, getSessionFromCtx } from "better-auth/api";
 import { setSessionCookie } from "better-auth/cookies";
-import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { drizzle } from "drizzle-orm/d1";
 import { z } from "zod";
 import {
   phoneSchema,
@@ -21,7 +19,7 @@ import {
   rememberSession,
   requireAccount,
 } from "./accounts.ts";
-import * as schema from "./schema.ts";
+import { authOptions } from "./auth-options.ts";
 import { Store } from "@heybox/hosting/store";
 import type { Env } from "./env.ts";
 import { runnerRequest } from "./security.ts";
@@ -460,17 +458,8 @@ export function createAuth(
     },
   } satisfies BetterAuthPlugin;
   return betterAuth({
-    appName: "Heybox Daily",
-    baseURL: env.SITE_URL,
-    secret: env.BETTER_AUTH_SECRET,
-    database: drizzleAdapter(drizzle(env.DB), { provider: "sqlite", schema }),
+    ...authOptions(env),
     plugins: [heyboxPlugin],
-    trustedOrigins: [new URL(env.SITE_URL).origin],
-    session: { expiresIn: 30 * 86400, updateAge: 86400, cookieCache: { enabled: false } },
-    advanced: {
-      useSecureCookies: env.SITE_URL.startsWith("https:"),
-      defaultCookieAttributes: { httpOnly: true, sameSite: "lax" },
-    },
     rateLimit: {
       enabled: true,
       customStorage: {
@@ -495,6 +484,5 @@ export function createAuth(
         },
       },
     },
-    logger: { disabled: true },
   });
 }

@@ -11,5 +11,6 @@ export interface Env {
   TOKEN_SERVICE_URL: string;
   TOKEN_SERVICE_TOKEN: string;
   DAILY_ENABLED: string;
+  SIGN_DIAGNOSTICS?: string;
   LOGIN_PREPARE_PARALLEL?: string;
 }

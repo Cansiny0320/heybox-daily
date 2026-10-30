@@ -29,7 +29,7 @@ function publicSnapshot(value: Inspection): TaskSnapshot {
   return { exp: value.exp, coin: value.coin, battery: value.battery, tasks: taskIds.map(id => ({ id,
     state: (id === 'sign' ? value.signed : value.tasks.find(task => task.id === id)?.state === 'finish') ? 'finish' : 'waiting' })) };
 }
-export async function executeDaily(job: Job, key: string, store: Pick<Store, 'heartbeat'>, fetchImpl: typeof fetch = fetch): Promise<Outcome & { category?: string }> {
+export async function executeDaily(job: Job, key: string, store: Pick<Store, 'heartbeat'>, fetchImpl: typeof fetch = fetch, options: { signDiagnostics?: boolean } = {}): Promise<Outcome & { category?: string }> {
   const scope = deadline(240_000, fetchImpl);
   const trace = new DailyTrace(job);
   try {
@@ -45,7 +45,8 @@ export async function executeDaily(job: Job, key: string, store: Pick<Store, 'he
     const execution: NonNullable<Outcome['execution']> = {};
     try {
       const result = await runDaily(client, config.session.heybox_id, { log: () => {}, checkpoint: check, sleep: scope.sleep,
-        onSignDiagnostic: diagnostic => console.log(JSON.stringify({ event: 'executor_sign_diagnostic', jobId: job.id, ...diagnostic })),
+        onSignDiagnostic: options.signDiagnostics
+          ? diagnostic => console.log(JSON.stringify({ event: 'executor_sign_diagnostic', jobId: job.id, ...diagnostic })) : undefined,
         onSnapshot: (value, delta) => { before ||= value; latest = value; expDelta = delta; },
         onTask: (id, action) => { execution[id] = action; }, onStage: stage => { trace.stage = stage; } });
       await check(true);
@@ -56,6 +57,10 @@ export async function executeDaily(job: Job, key: string, store: Pick<Store, 'he
       if (text === 'cancelled' || text === 'cross_day') return { status: 'cancelled', reason: text, execution };
       const failure = trace.fail(error, scope.signal.aborted);
       if (failure.category === 'auth') return { status: 'auth_expired', reason: 'auth_expired', execution, failure, errors: trace.errors };
+      // No write was attempted: another immediate observation only repeats the failing request.
+      if (!Object.values(execution).includes('executed'))
+        return { status: 'failed', reason: scope.signal.aborted ? 'timeout' : 'upstream',
+          category: failure.category, execution, failure, errors: trace.errors };
       let snapshot: TaskSnapshot | undefined;
       try {
         trace.stage = 'reconcile';

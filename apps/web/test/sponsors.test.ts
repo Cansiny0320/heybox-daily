@@ -27,7 +27,7 @@ test("public sponsor configuration preserves order and only returns display fiel
   } as unknown as Env;
   const response = await sponsorContent(request("/api/sponsors"), env, execution, noCache);
   assert.equal(response?.status, 200);
-  assert.equal(response?.headers.get("cache-control"), "no-store");
+  assert.equal(response?.headers.get("cache-control"), "public, max-age=60");
   assert.deepEqual(await response?.json(), [sponsor, { ...sponsor, id: "second", name: "Second" }]);
 });
 
@@ -182,4 +182,66 @@ test("cache failure does not prevent serving an R2 avatar", async () => {
   assert.equal(response?.status, 200);
   assert.equal(await response?.text(), "");
   await Promise.all(writes);
+});
+
+test("sponsor list caches only successful public reads, shares GET/HEAD and expires", async (t) => {
+  t.mock.method(console, "error", () => {});
+  let stored: Response | undefined,
+    reads = 0,
+    now = 0,
+    expires = 0,
+    fail = false;
+  const writes: Promise<unknown>[] = [];
+  const cache = {
+    match: async (key: Request) => {
+      assert.equal(key.url, "https://site.invalid/api/sponsors");
+      assert.equal(key.headers.get("cookie"), null);
+      return now < expires ? stored?.clone() : undefined;
+    },
+    put: async (_key: Request, value: Response) => {
+      assert.equal(value.headers.get("set-cookie"), null);
+      stored = value;
+      expires = now + 60000;
+    },
+  };
+  const env = {
+    SITE_CONFIG: {
+      get: async () => {
+        reads++;
+        if (fail) throw new Error("KV unavailable");
+        return [sponsor];
+      },
+    },
+  } as unknown as Env;
+  const context = {
+    waitUntil: (p: Promise<unknown>) => {
+      writes.push(p);
+    },
+  };
+  for (let i = 0; i < 10; i++) {
+    const response = await sponsorContent(
+      new Request("https://site.invalid/api/sponsors?q=1", { headers: { cookie: "private" } }),
+      env,
+      context,
+      cache,
+    );
+    assert.deepEqual(await response!.json(), [sponsor]);
+    await Promise.all(writes);
+  }
+  assert.equal(reads, 1);
+  assert.equal(
+    await (await sponsorContent(request("/api/sponsors", "HEAD"), env, context, cache))!.text(),
+    "",
+  );
+  now = 60001;
+  fail = true;
+  assert.equal(
+    (await sponsorContent(request("/api/sponsors"), env, context, cache))!.headers.get(
+      "cache-control",
+    ),
+    "no-store",
+  );
+  fail = false;
+  await sponsorContent(request("/api/sponsors"), env, context, cache);
+  assert.equal(reads, 3);
 });

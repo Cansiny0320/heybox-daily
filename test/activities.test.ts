@@ -178,3 +178,22 @@ test('a full history window does not hide the active rooms already discovered', 
   };
   assert.equal((await listActivities(f.client, '123'))[0].id, '9'); assert.equal(pages, 10);
 });
+
+test('activity details use two bounded readers, preserve list order and drain on failure', async () => {
+  for (const fail of [false, true]) {
+    const f = fixture();
+    let active = 0, peak = 0, reads = 0;
+    const client: ActivityClient = { ...f.client, web: async <T>(path: string, query?: Record<string, string>) => {
+      if (path.endsWith('room_list')) return [9, 10, 11, 12].map(award_id => ({ award_id, status: 0 })) as T;
+      active++; peak = Math.max(peak, active); reads++;
+      try {
+        await new Promise(resolve => setTimeout(resolve, query?.award_id === '9' ? 15 : 1));
+        if (fail && query?.award_id === '10') throw new Error('upstream unavailable');
+        return { ...f.home, award_info: { ...f.home.award_info, award_id: Number(query?.award_id) } } as T;
+      } finally { active--; }
+    } };
+    if (fail) { await assert.rejects(listActivities(client, '123'), /upstream unavailable/); assert.equal(reads, 2); }
+    else assert.deepEqual((await listActivities(client, '123')).map(row => row.id), ['9', '10', '11', '12']);
+    assert.equal(peak, 2); assert.equal(active, 0, 'no upstream work outlives the list operation');
+  }
+});

@@ -223,7 +223,7 @@ export class Store {
           WHERE other.user_id=j.user_id AND other.lease_until>=?),0)) END) AS due
       FROM jobs j JOIN hosting h ON h.user_id=j.user_id
       WHERE j.status IN ('queued','running') AND h.enabled=1 AND h.credential_state='valid')) AS due,
-      (SELECT next_start_at FROM daily_scheduler WHERE id=1) AS next_start_at,
+      (SELECT MAX(next_start_at,cooldown_until) FROM daily_scheduler WHERE id=1) AS next_start_at,
       (EXISTS(SELECT 1 FROM jobs WHERE status IN ('queued','running') AND date<?)
        OR EXISTS(SELECT 1 FROM jobs WHERE status IN ('queued','running') AND date>?)) AS needs_recovery`,
       now,
@@ -282,13 +282,28 @@ export class Store {
     ]);
   }
   async reserveDispatch(limit = DAILY_DISPATCH_LIMIT): Promise<Array<QueueMessage & { delaySeconds: number }>> {
-    await this.recover();
     const now = this.now();
+    // Most cron ticks have no work. Keep lease/attempt recovery independent of cooldown.
+    const work = await this.sql(`SELECT
+      (EXISTS(SELECT 1 FROM jobs WHERE status IN ('queued','running') AND date<>?)
+       OR EXISTS(SELECT 1 FROM jobs WHERE status='running' AND lease_until<?)
+       OR EXISTS(SELECT 1 FROM job_attempts a JOIN jobs j ON j.id=a.job_id
+         WHERE a.status='running' AND (j.status<>'running' OR j.lease IS NOT a.id))) AS recover,
+      EXISTS(SELECT 1 FROM jobs j JOIN hosting h ON h.user_id=j.user_id
+        WHERE j.status='queued' AND j.date=? AND j.available_at<=? AND j.dispatch_until<=?
+        AND j.attempts<${DAILY_ATTEMPT_LIMIT} AND h.enabled=1 AND h.credential_state='valid'
+        AND (SELECT cooldown_until FROM daily_scheduler WHERE id=1)<=?
+        AND NOT EXISTS(SELECT 1 FROM jobs other WHERE other.user_id=j.user_id AND other.lease_until>=?)) AS ready`,
+      beijingDate(now), now, beijingDate(now), now, now, now, now,
+    ).first<{ recover: number; ready: number }>();
+    if (!work?.recover && !work?.ready) return [];
+    if (work?.recover) await this.recover();
     const token = crypto.randomUUID();
     await this.db.batch([this.sql(
       `WITH candidates AS MATERIALIZED (
         SELECT j.id,j.available_at,j.created_at FROM jobs j JOIN hosting h ON h.user_id=j.user_id
         WHERE j.status='queued' AND j.date=? AND j.queue_published IN (0,1) AND j.available_at<=?
+        AND (SELECT cooldown_until FROM daily_scheduler WHERE id=1)<=?
         AND j.dispatch_until<=? AND j.attempts<${DAILY_ATTEMPT_LIMIT} AND h.enabled=1 AND h.credential_state='valid'
         AND NOT EXISTS(SELECT 1 FROM jobs other WHERE other.user_id=j.user_id AND other.lease_until>=?)
         ORDER BY j.available_at,j.created_at,j.id LIMIT MAX(0,MIN(?,${DAILY_DISPATCH_LIMIT}-(
@@ -308,6 +323,7 @@ export class Store {
       now,
       now,
       now,
+      now,
       limit,
       beijingDate(now),
       now,
@@ -315,7 +331,8 @@ export class Store {
       token,
     ), this.sql(
       `UPDATE daily_scheduler SET next_dispatch_at=COALESCE(
-        (SELECT MAX(dispatch_at)+${DAILY_START_INTERVAL_MS} FROM jobs WHERE queue_token=?),next_dispatch_at) WHERE id=1`, token,
+        (SELECT MAX(dispatch_at)+${DAILY_START_INTERVAL_MS} FROM jobs WHERE queue_token=?),next_dispatch_at)
+       WHERE id=1 AND EXISTS(SELECT 1 FROM jobs WHERE queue_token=?)`, token, token,
     )]);
     const rows = await this.sql(
       `SELECT id,queue_token AS token,MAX(0,CAST((dispatch_at-?+999)/1000 AS INTEGER)) AS delaySeconds
@@ -349,7 +366,7 @@ export class Store {
       `UPDATE jobs SET status='running',attempts=attempts+1,lease=?,lease_until=?,updated_at=?,
       version=(SELECT version FROM hosting WHERE user_id=jobs.user_id)
       WHERE id=? AND queue_token=? AND status='queued' AND attempts<${DAILY_ATTEMPT_LIMIT} AND available_at<=? AND date=?
-      AND dispatch_at<=? AND (SELECT next_start_at FROM daily_scheduler WHERE id=1)<=?
+      AND dispatch_at<=? AND (SELECT MAX(next_start_at,cooldown_until) FROM daily_scheduler WHERE id=1)<=?
       AND EXISTS(SELECT 1 FROM hosting WHERE user_id=jobs.user_id AND enabled=1 AND credential_state='valid')
       AND NOT EXISTS(SELECT 1 FROM jobs other WHERE other.user_id=jobs.user_id AND other.lease_until>=?) RETURNING *`,
       lease,
@@ -365,7 +382,7 @@ export class Store {
     ), lease, now);
     if (!row) {
       const waiting = await this.sql(
-        `SELECT MAX(?,j.available_at,j.dispatch_at,(SELECT next_start_at FROM daily_scheduler WHERE id=1),
+        `SELECT MAX(?,j.available_at,j.dispatch_at,(SELECT MAX(next_start_at,cooldown_until) FROM daily_scheduler WHERE id=1),
           COALESCE((SELECT MAX(other.lease_until)+1 FROM jobs other WHERE other.user_id=j.user_id AND other.lease_until>=?),0)) AS next_at
          FROM jobs j JOIN hosting h ON h.user_id=j.user_id
          WHERE j.id=? AND j.queue_token=? AND j.status='queued' AND j.attempts<${DAILY_ATTEMPT_LIMIT}
@@ -409,7 +426,7 @@ export class Store {
         WHERE j.status='queued' AND j.attempts<${DAILY_ATTEMPT_LIMIT} AND j.available_at<=? AND j.date=? AND h.enabled=1 AND h.credential_state='valid'
         AND NOT EXISTS(SELECT 1 FROM jobs other WHERE other.user_id=j.user_id AND other.lease_until>=?)
         ORDER BY j.available_at,j.created_at LIMIT 1)
-      AND (SELECT next_start_at FROM daily_scheduler WHERE id=1)<=? RETURNING *`,
+      AND (SELECT MAX(next_start_at,cooldown_until) FROM daily_scheduler WHERE id=1)<=? RETURNING *`,
       lease,
       now + 300_000,
       now,
@@ -480,7 +497,14 @@ export class Store {
       lease,
       version,
     ).first<{ result: string | null; attempts: number }>();
-    const delay = retryDelay(outcome, previous?.attempts ?? DAILY_ATTEMPT_LIMIT);
+    if (!previous) return false;
+    const limits = [outcome.failure, ...(outcome.errors || [])].filter(failure =>
+      failure?.httpStatus === 429 && failure.endpoint !== undefined
+      && (failure.endpoint === '/account/data_report/'
+        || ['/task/', '/bbs/', '/game/'].some(prefix => failure.endpoint!.startsWith(prefix))));
+    const rateLimit = limits.length > 0;
+    const cooldownMs = Math.max(60_000, ...limits.map(failure => failure?.retryAfterMs ?? 0));
+    const delay = retryDelay(outcome, previous.attempts);
     const retryAt = delay === null ? now : now + delay;
     const retryable = delay !== null && beijingDate(retryAt) === beijingDate(now);
     const old = previous?.result ? outcomeSchema.parse(JSON.parse(previous.result)) : null;
@@ -539,6 +563,18 @@ export class Store {
         retry_at=(SELECT CASE WHEN status='queued' THEN available_at END FROM jobs WHERE id=?)
         WHERE id=? AND status='running' AND EXISTS(SELECT 1 FROM jobs WHERE id=? AND lease=? AND version=? AND updated_at=? AND status<>'running')`,
         outcome.status,now,JSON.stringify(outcome),id,lease,id,lease,version,now),
+      ...(rateLimit ? [
+        this.sql(`DELETE FROM daily_rate_limits WHERE observed_at<?`, now - 60_000),
+        this.sql(`INSERT INTO daily_rate_limits(user_id,observed_at,retry_until)
+          SELECT user_id,?,? FROM jobs WHERE id=? AND lease=? AND version=? AND updated_at=? AND status<>'running'
+          ON CONFLICT(user_id) DO UPDATE SET observed_at=excluded.observed_at,retry_until=MAX(daily_rate_limits.retry_until,excluded.retry_until)`,
+          now, now + cooldownMs, id, lease, version, now),
+        this.sql(`UPDATE daily_scheduler SET cooldown_until=MAX(cooldown_until,
+          COALESCE((SELECT MAX(retry_until) FROM daily_rate_limits WHERE observed_at>=?),0))
+          WHERE id=1 AND (cooldown_until>? OR (SELECT COUNT(*) FROM daily_rate_limits WHERE observed_at>=?)>=2)
+          AND EXISTS(SELECT 1 FROM jobs WHERE id=? AND lease=? AND version=? AND updated_at=? AND status<>'running')`,
+          now - 60_000, now, now - 60_000, id, lease, version, now),
+      ] : []),
       this.sql(
         `UPDATE hosting SET enabled=0,credential_state='expired',updated_at=? WHERE version=? AND user_id=(
         SELECT user_id FROM jobs WHERE id=? AND lease=? AND version=? AND status='auth_expired' AND updated_at=?)`,

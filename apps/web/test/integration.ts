@@ -318,7 +318,13 @@ for (let count = 0; count < 10 && accounts.size; count++) {
   const response = await internal("claim", {});
   assert.equal(response.status, 200);
   const payload = await response.json();
-  if (!payload) break;
+  if (!payload) {
+    // The shared start gate can briefly return no job while known work is still queued.
+    const delay = Number(response.headers.get("retry-after"));
+    assert.ok(delay > 0 && delay <= 4, "pending fixture jobs must resume after the start gate");
+    await new Promise((resolve) => setTimeout(resolve, delay * 1000));
+    continue;
+  }
   const job = jobSchema.parse(payload);
   assert.equal(
     decryptCredential(job.credential, process.env.CREDENTIAL_KEY || "").session.heybox_id,

@@ -1,0 +1,53 @@
+{
+  "fixture": "1600 completed jobs; 8 messages delayed together by 60s; 5x200 authenticated session reads",
+  "idle": {
+    "before": {
+      "sqlStatements": 8,
+      "changedRows": 1
+    },
+    "after": {
+      "sqlStatements": 1,
+      "changedRows": 0
+    }
+  },
+  "burst": {
+    "before": {
+      "producerWrites": 10,
+      "mainQueueReads": 35,
+      "mainQueueAcks": 8,
+      "dlqTransfers": 2,
+      "executions": 8,
+      "elapsedMs": 184000
+    },
+    "after": {
+      "producerWrites": 15,
+      "mainQueueReads": 15,
+      "mainQueueAcks": 15,
+      "dlqTransfers": 0,
+      "executions": 8,
+      "elapsedMs": 144000
+    }
+  },
+  "sessionAuth": {
+    "before": {
+      "cpuMsPerReadMedian": 0.508165,
+      "rounds": [
+        0.724185,
+        0.527205,
+        0.508165,
+        0.42735,
+        0.47955
+      ]
+    },
+    "after": {
+      "cpuMsPerReadMedian": 0.22460000000000002,
+      "rounds": [
+        0.35325,
+        0.25049499999999997,
+        0.18458,
+        0.17586,
+        0.22460000000000002
+      ]
+    }
+  }
+}
