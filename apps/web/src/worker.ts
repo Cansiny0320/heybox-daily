@@ -39,7 +39,8 @@ export default {
     const cacheable =
       response.ok &&
       ((path === "/api/stats" && request.method === "GET") ||
-        (path.startsWith("/sponsors/") && ["GET", "HEAD"].includes(request.method)));
+        ((path === "/api/sponsors" || path.startsWith("/sponsors/")) &&
+          ["GET", "HEAD"].includes(request.method)));
     if (!cacheable) result.headers.set("cache-control", "no-store");
     const durationMs = Math.round((performance.now() - started) * 10) / 10;
     result.headers.set(
