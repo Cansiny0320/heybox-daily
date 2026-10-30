@@ -28,5 +28,38 @@
         "initialWrites": 129
       }
     }
-  ]
+  ],
+  "production": {
+    "migration": "0008_dispatch_read_indexes.sql",
+    "executorVersion": "2eb2a3f9-aa48-4bc1-8c17-70e4cec0e351",
+    "webVersion": "ae25fd93-f543-463b-a1c5-f3f90634e6a1",
+    "directReadChecks": {
+      "crossDay": 8,
+      "inFlight": 20,
+      "ordered32Candidates": 242
+    },
+    "usageSnapshotAt": "2026-10-31T01:33:57+08:00",
+    "before": {
+      "from": "2026-10-31T01:24:00+08:00",
+      "to": "2026-10-31T01:27:00+08:00",
+      "rowsRead": 36214,
+      "rowsWritten": 696,
+      "completed": 25,
+      "failedAttempts": 0,
+      "authExpiredAttempts": 1
+    },
+    "after": {
+      "from": "2026-10-31T01:29:00+08:00",
+      "to": "2026-10-31T01:32:00+08:00",
+      "rowsRead": 21220,
+      "rowsWritten": 963,
+      "completed": 19,
+      "failedAttempts": 6
+    },
+    "limitations": [
+      "Cloudflare minute analytics may backfill",
+      "Includes production traffic and read-only verification queries",
+      "Task completion counts and failure counts differ; not a controlled full-day billing comparison"
+    ]
+  }
 }
