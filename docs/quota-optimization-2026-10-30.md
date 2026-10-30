@@ -1,6 +1,6 @@
 # Cloudflare 配额优化：逻辑变化与验证
 
-2026-10-30。本地实现完成，未 commit、push、部署或执行远端 D1 迁移。
+2026-10-30。优化已提交并推送，生产 D1 迁移已应用，Web / Executor 已部署并完成下述线上验证。
 
 ## 优化前后
 
@@ -75,17 +75,29 @@ node test/run-integration.ts
 
 ## 发布与本地改动边界
 
-先应用新增 `apps/web/migrations/0007_daily_cooldown.sql`，再发布依赖它的 Web/Executor；迁移是加列和新表，旧代码可以忽略这些状态，回滚旧代码不要求删表。`SIGN_DIAGNOSTICS` 缺省关闭，排障时显式设为 `true`。本次没有更改生产配置。
+先应用新增 `apps/web/migrations/0007_daily_cooldown.sql`，再发布依赖它的 Web/Executor；迁移是加列和新表，旧代码可以忽略这些状态，回滚旧代码不要求删表。`SIGN_DIAGNOSTICS` 缺省关闭，排障时显式设为 `true`。原有生产绑定、Queue 消费参数和 Cron 配置保持不变。
 
-审查基于远端 `dd4de7b`。因本地原有未提交改动阻止 fast-forward，先做逐文件三方整合，保留本地登录、设备令牌和请求计时器改动，再建立上述基线。Git HEAD/index 未移动；远端同步差异与本次优化差异均留在工作区。整合前原文件备份位于同一临时目录的 `before/`，本次优化不得通过整仓 reset 回滚。
+审查基于远端 `dd4de7b`。因本地原有未提交改动阻止 fast-forward，先做逐文件三方整合，保留本地登录、设备令牌和请求计时器改动，再建立上述基线。初次验证时 Git HEAD/index 未移动；发布阶段已将远端历史及本次优化提交纳入 main，其余本地改动继续保留在工作区。整合前原文件备份位于同一临时目录的 `before/`，本次优化不得通过整仓 reset 回滚。
 
-线上配额对比应在另行批准部署后，以同一账期窗口和相近业务量比较 Workers CPU、Queue 操作、DO 请求/时长；不能把当前本地结果当作已实现的账单下降。
-
+上线后的配额对比应以同一账期窗口和相近业务量比较 Workers CPU、Queue 操作、DO 请求/时长；不能把当前本地结果当作已实现的账单下降。
 
 ## 发布包复核（2026-10-30）
 
 用户已授权提交、推送、迁移和生产部署。发布包以 `origin/main dd4de7b` 为基础，只带入本次优化，排除其他会话未提交的密码登录和设备身份改动；上文 432 项是完整本地工作区的验证记录。
 
-实际发布包单独通过 Root/Web/Executor 284 项测试、类型检查、Web build/lint/format、本地 Web 集成和 Executor workerd 集成。生产数据库迁移前已备份，当前登记到 `0006_daily_start_pacing.sql`；本次只新增 `0007_daily_cooldown.sql`。
+实际发布包单独通过 Root/Web/Executor 284 项测试、类型检查、Web build/lint/format、本地 Web 集成和 Executor workerd 集成。生产数据库迁移前已备份；迁移前登记到 `0006_daily_start_pacing.sql`，本次已成功应用 `0007_daily_cooldown.sql`。
 
 部署前回滚版本：Web `eadb7990-86fa-4f80-ac4d-a3b1c0a702c3`，Executor `cffa2016-a8f3-4660-a5ac-bad775ff175e`。迁移为向后兼容的加列/加表，代码回滚不删除数据库数据。
+
+## 生产部署与验证（2026-10-30）
+
+- 已推送 `2f5aae3`（配额优化）与 `751a1c5`（Worker 最外层保留赞助缓存响应头）。上线冒烟发现外层缓存白名单遗漏 `/api/sponsors`，已先用回归测试复现，再修复、构建并重新部署；相关 8 项测试和 Web 类型检查、构建、本地集成均通过。
+- D1 迁移前备份：`private/quota-release-20261030/before-0007.sql`，保留在本地，不提交。迁移后已通过生产只读查询确认迁移记录、`cooldown_until` 列、`daily_rate_limits` 表及索引存在。
+- Web 当前 100% 版本：`a1fdc4f7-e8ea-414b-b16f-65987871f465`，部署时间 2026-10-30 18:06:39（Asia/Shanghai）。
+- Executor 当前 100% 版本：`a0c97b05-9267-4cde-a30e-b90b2e503f95`，部署时间 2026-10-30 18:00:51（Asia/Shanghai）。
+- Cloudflare API 回读确认 Web Cron `30 * * * *`、Executor Cron `* * * * *` 保留；主队列 batch size 1、并发 6、max retries 5、retry delay 60 秒及 DLQ 绑定保留。
+- 线上冒烟：7 个公开页面/资源返回 200；未登录访问首页、任务、历史均跳转登录；受保护 RPC 返回 401；访客及无效 cookie 会话为空；统计接口正常；赞助名单连续读取正常且返回 `public, max-age=60`，头像返回图片；受保护 Executor 健康接口返回 Cloudflare runtime 且 dailyEnabled=true。
+- 线上任务、历史页面的 JS 资源 SHA-256 与独立发布包一致；最后一轮冒烟时间为 2026-10-30 18:10:37（Asia/Shanghai）。
+- 最终版本 85 秒日志观察：Web 18 个事件、Executor 3 个事件全部 outcome=ok，异常及调度失败均为 0；其中 Executor 在 18:10:27 和 18:11:27 连续两次 Cron 正常执行。
+
+生产检查没有触发真实短信、签到或活动参与，也没有人为制造上游 429；业务执行和冷却边界由本地 workerd 集成覆盖。线上观察仅证明检查窗口内的服务与调度状态，真实配额下降需要积累上线后的同口径用量数据。
