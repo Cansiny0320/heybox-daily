@@ -1,0 +1,32 @@
+{
+  "runtime": "local workerd D1",
+  "beforeCommit": "062bf48",
+  "scenarios": [
+    {
+      "queued": 1600,
+      "before": {
+        "initialReads": 12619,
+        "fullReads": 3246,
+        "initialWrites": 97
+      },
+      "after": {
+        "initialReads": 1555,
+        "fullReads": 84,
+        "initialWrites": 129
+      }
+    },
+    {
+      "queued": 8000,
+      "before": {
+        "initialReads": 57419,
+        "fullReads": 16046,
+        "initialWrites": 97
+      },
+      "after": {
+        "initialReads": 1555,
+        "fullReads": 84,
+        "initialWrites": 129
+      }
+    }
+  ]
+}

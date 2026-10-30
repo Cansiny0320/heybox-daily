@@ -5,7 +5,7 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "node --test test/*.test.ts",
-    "test:runtime": "node test/runtime.mjs",
+    "test:runtime": "node test/runtime.mjs && node test/dispatch-reads.mjs",
     "deploy": "wrangler deploy"
   },
   "dependencies": { "@heybox/contracts": "workspace:*", "@heybox/hosting": "workspace:*", "heybox-daily": "workspace:*" },

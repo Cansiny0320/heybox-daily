@@ -285,7 +285,8 @@ export class Store {
     const now = this.now();
     // Most cron ticks have no work. Keep lease/attempt recovery independent of cooldown.
     const work = await this.sql(`SELECT
-      (EXISTS(SELECT 1 FROM jobs WHERE status IN ('queued','running') AND date<>?)
+      (EXISTS(SELECT 1 FROM jobs WHERE status IN ('queued','running') AND date<?)
+       OR EXISTS(SELECT 1 FROM jobs WHERE status IN ('queued','running') AND date>?)
        OR EXISTS(SELECT 1 FROM jobs WHERE status='running' AND lease_until<?)
        OR EXISTS(SELECT 1 FROM job_attempts a JOIN jobs j ON j.id=a.job_id
          WHERE a.status='running' AND (j.status<>'running' OR j.lease IS NOT a.id))) AS recover,
@@ -294,7 +295,7 @@ export class Store {
         AND j.attempts<${DAILY_ATTEMPT_LIMIT} AND h.enabled=1 AND h.credential_state='valid'
         AND (SELECT cooldown_until FROM daily_scheduler WHERE id=1)<=?
         AND NOT EXISTS(SELECT 1 FROM jobs other WHERE other.user_id=j.user_id AND other.lease_until>=?)) AS ready`,
-      beijingDate(now), now, beijingDate(now), now, now, now, now,
+      beijingDate(now), beijingDate(now), now, beijingDate(now), now, now, now, now,
     ).first<{ recover: number; ready: number }>();
     if (!work?.recover && !work?.ready) return [];
     if (work?.recover) await this.recover();
@@ -307,8 +308,10 @@ export class Store {
         AND j.dispatch_until<=? AND j.attempts<${DAILY_ATTEMPT_LIMIT} AND h.enabled=1 AND h.credential_state='valid'
         AND NOT EXISTS(SELECT 1 FROM jobs other WHERE other.user_id=j.user_id AND other.lease_until>=?)
         ORDER BY j.available_at,j.created_at,j.id LIMIT MAX(0,MIN(?,${DAILY_DISPATCH_LIMIT}-(
-          SELECT COUNT(*) FROM jobs WHERE date=? AND (status='running' OR
-            (status='queued' AND queue_token IS NOT NULL AND dispatch_until>?))
+          SELECT COUNT(*) FROM jobs WHERE date=? AND status='running'
+        )-(
+          SELECT COUNT(*) FROM jobs WHERE date=? AND status='queued'
+            AND queue_token IS NOT NULL AND dispatch_until>?
         )))
       ), slots AS MATERIALIZED (
         SELECT id,MAX(?,(SELECT MAX(next_start_at,next_dispatch_at) FROM daily_scheduler WHERE id=1))
@@ -325,6 +328,7 @@ export class Store {
       now,
       now,
       limit,
+      beijingDate(now),
       beijingDate(now),
       now,
       now,
