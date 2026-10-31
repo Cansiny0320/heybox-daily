@@ -67,4 +67,4 @@ docker compose run --rm heybox run
 
 觉得好用的话，欢迎通过微信或支付宝支持一下。
 
-![微信与支付宝赞助二维码](.github/sponsorship/sponsorship-cats.png)
+![微信与支付宝赞助二维码](.github/sponsorship/sponsorship-cats.webp)

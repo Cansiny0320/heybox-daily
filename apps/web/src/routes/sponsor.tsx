@@ -32,7 +32,7 @@ function Sponsor() {
       <p className="mt-4 text-base text-muted-foreground">觉得好用的话，欢迎支持一下。</p>
       <a href="/sponsorship.png" target="_blank" rel="noreferrer" className="mt-10 block">
         <img
-          src="/sponsorship.webp"
+          src="/sponsors/sponsorship-20261101.webp"
           width={1536}
           height={1024}
           alt="微信和支付宝赞助收款码"
