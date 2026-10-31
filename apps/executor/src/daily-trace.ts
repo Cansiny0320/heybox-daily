@@ -12,7 +12,7 @@ export function dailyFailure(error: unknown, stage: string, durationMs: number):
     endpoint: error.endpoint, httpStatus: error.httpStatus, businessCode: error.status, retryAfterMs: error.retryAfterMs });
   const text = error instanceof Error ? error.message : '';
   return { ...base, category: /execution_timeout/.test(text) ? 'timeout'
-    : /未确认|未结算|未通过复查/.test(text) ? 'unconfirmed'
+    : /未确认|未结算|未通过复查|^最终状态未通过检查/.test(text) ? 'unconfirmed'
     : /登录已过期|登录态失效|设备令牌无效/.test(text) ? 'auth' : 'protocol' };
 }
 
