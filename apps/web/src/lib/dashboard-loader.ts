@@ -15,7 +15,7 @@ export function historyPollInterval(rows: readonly PollRow[] | undefined, now = 
     if (row.status === "queued")
       interval = Math.min(
         interval,
-        row.retryAt != null && row.retryAt > now ? Math.min(60_000, row.retryAt - now) : 5_000,
+        row.retryAt != null && row.retryAt > now ? Math.min(60_000, row.retryAt - now) : 60_000,
       );
   }
   return Math.max(1_000, Math.min(interval, midnight - now));

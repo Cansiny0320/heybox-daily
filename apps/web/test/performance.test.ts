@@ -214,8 +214,8 @@ test("future retries poll slowly until due while running work polls quickly", ()
   const today = dashboard("queued").today!;
   const now = Date.parse("2026-10-27T08:00:00+08:00");
   assert.equal(dashboardPollInterval({ ...today, retryAt: now + 60000 }, now), 60000);
-  assert.equal(dashboardPollInterval({ ...today, retryAt: now }, now), 5000);
-  assert.equal(dashboardPollInterval({ ...today, retryAt: null }, now), 5000);
+  assert.equal(dashboardPollInterval({ ...today, retryAt: now }, now), 60000);
+  assert.equal(dashboardPollInterval({ ...today, retryAt: null }, now), 60000);
   assert.equal(
     dashboardPollInterval({ ...today, status: "running", retryAt: now + 60000 }, now),
     5000,
