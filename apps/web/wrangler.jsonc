@@ -6,6 +6,7 @@
   "compatibility_date": "2026-10-26",
   "compatibility_flags": ["nodejs_compat", "enable_request_signal", "request_signal_passthrough"],
   "workers_dev": false,
+  "assets": { "html_handling": "none" },
   "kv_namespaces": [{ "binding": "SITE_CONFIG", "id": "05d04cf561004bd9b5b6084deb9dedf4" }],
   "r2_buckets": [{ "binding": "SPONSOR_ASSETS", "bucket_name": "heybox-daily-assets" }],
   "observability": {

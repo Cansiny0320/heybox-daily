@@ -42,6 +42,7 @@ function RootDocument({ children }: { children: ReactNode }) {
     <html lang="zh-CN">
       <head>
         <HeadContent />
+        <meta name="baidu-site-verification" content="codeva-wVGtIq5ea2" />
       </head>
       <body>
         {children}
