@@ -18,10 +18,24 @@ test('first-submit diagnostics distinguish response states from an absent state'
   assert.equal(signResponse(null).result_type, 'null');
   assert.equal(signResponse([]).result_type, 'array');
 });
+test('records the exact state value and JSON type, including values excluded from the legacy summary', () => {
+  for (const [state, type] of [[1, 'number'], ['1', 'string'], [false, 'boolean'],
+    [null, 'null'], ['', 'string'], ['SUCCESS', 'string'], ['a'.repeat(33), 'string'],
+    [{ code: 1 }, 'object'], [[1, 'ok'], 'array']] as const) {
+    const value = JSON.parse(JSON.stringify(signResponse({ state, pkey: 'private-key', description: 'private-description' })));
+    assert.equal(value.state_type, type);
+    assert.deepEqual(value.state_raw, state);
+    assert.ok(!JSON.stringify(value).includes('private-'));
+  }
+  const missing = JSON.parse(JSON.stringify(signResponse({})));
+  assert.equal(missing.state_type, 'missing');
+  assert.equal(Object.hasOwn(missing, 'state_raw'), false);
+});
 test('response shape diagnostics retain only known field names alongside the raw state', () => {
   const value = signResponse({ state: 'NOT_OK.1', pkey: 'private-key',
     'private-field': 'private-value', description: 'private-description', signed_date: 20754 });
   assert.equal(value.state, 'unknown'); assert.equal(value.state_source, 'redacted');
+  assert.equal(value.state_raw, 'NOT_OK.1');
   assert.deepEqual(value.fields, ['state', 'signed_date', 'description']);
   assert.equal(value.field_count, 5);
   assert.ok(!JSON.stringify(value).includes('private-'));

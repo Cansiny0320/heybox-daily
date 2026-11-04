@@ -72,6 +72,19 @@ test('HTTP errors, expired login and malformed replies cannot be mistaken for su
     await assert.rejects(client.tasks(), (error: unknown) => error instanceof Error && !error.message.includes('secret') && !error.message.includes('private data'));
   }
 });
+test('native requests use the official APP User-Agent and Referer', async () => {
+  const client = new HeyboxClient(config, {
+    signer: () => ({ hkey: 'test', _time: '1', nonce: 'test', _rnd: '1' }),
+    fetchImpl: async (_url, options) => {
+      assert.equal(new Headers(options?.headers).get('User-Agent'), 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2272.118 Safari/537.36 ApiMaxJia/1.0');
+      assert.equal(new Headers(options?.headers).get('Referer'), 'http://api.maxjia.com/');
+      return Response.json({ status: 'ok', result: {} });
+    },
+  });
+  await client.signState();
+  await client.sign();
+  await client.native('/task/list_v2/');
+});
 test('invalid credentials and unsupported versions fail before network calls', () => {
   assert.equal(validateConfig(structuredClone(config)).app.version, '1.3.398');
   const invalid = structuredClone(config); invalid.session.pkey += '\r\nCookie: injected';
