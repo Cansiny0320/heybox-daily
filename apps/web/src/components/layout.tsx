@@ -9,7 +9,7 @@ import {
   Suspense,
   type ReactNode,
 } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, TriangleAlert } from "lucide-react";
 import { Button } from "./ui/button";
 import { AccountAvatar } from "./account-avatar";
 import { authRequest } from "../lib/client";
@@ -17,6 +17,7 @@ import { readAccounts, type Account } from "../lib/accounts";
 export type { Account } from "../lib/accounts";
 import { readableError } from "../lib/utils";
 import { isPreview } from "../lib/deployment";
+import { repositoryUrl } from "../lib/seo";
 
 const AccountMenu = lazy(() => import("./account-menu"));
 const Modal = lazy(() => import("./dialog").then(({ Modal }) => ({ default: Modal })));
@@ -132,7 +133,7 @@ export function Layout({ children }: { children: ReactNode }) {
                 Heybox
               </Link>
               <a
-                href="https://github.com/Cansiny0320/heybox-daily"
+                href={repositoryUrl}
                 target="_blank"
                 rel="noreferrer"
                 aria-label="GitHub 仓库"
@@ -211,6 +212,29 @@ export function Layout({ children }: { children: ReactNode }) {
             </nav>
           </div>
         </header>
+        <aside
+          aria-label="防诈骗提示"
+          className="border-b border-amber-200 bg-amber-50 text-amber-950"
+        >
+          <div className="mx-auto flex max-w-6xl items-start gap-3 px-6 py-3 text-sm leading-6 sm:px-8">
+            <TriangleAlert aria-hidden="true" className="mt-0.5 size-5 shrink-0" />
+            <p>
+              <strong>Heybox Daily 是完全免费的开源项目。</strong>
+              如果你是付费购买的，可能遭遇了盗卖或诈骗。请认准
+              <a href={repositoryUrl} target="_blank" rel="noreferrer" className="underline">
+                GitHub 项目仓库
+              </a>
+              。
+              <span className="block">
+                本网站免费提供服务，如果你觉得好用，欢迎
+                <Link to="/sponsor" className="underline">
+                  赞助支持
+                </Link>
+                。
+              </span>
+            </p>
+          </div>
+        </aside>
         <main className="flex-1">{children}</main>
         <footer className="mx-auto w-full max-w-6xl px-6 pb-8 text-sm text-muted-foreground sm:px-8">
           <div className="flex flex-wrap items-center gap-x-6 gap-y-3 border-t pt-6">

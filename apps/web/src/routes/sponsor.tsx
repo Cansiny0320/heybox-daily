@@ -29,7 +29,9 @@ function Sponsor() {
   return (
     <section className="mx-auto max-w-6xl px-6 pt-14 pb-16 sm:px-8 sm:pt-16">
       <h1 className="text-3xl font-semibold tracking-tight">赞助</h1>
-      <p className="mt-4 text-base text-muted-foreground">觉得好用的话，欢迎支持一下。</p>
+      <p className="mt-4 text-base text-muted-foreground">
+        网站的日常运行有服务器和数据库开销。如果你觉得好用，欢迎赞助支持。
+      </p>
       <a href="/sponsorship.png" target="_blank" rel="noreferrer" className="mt-10 block">
         <img
           src="/sponsors/sponsorship-20261101.webp"
