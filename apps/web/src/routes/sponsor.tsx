@@ -55,7 +55,7 @@ function Sponsor() {
           <h2 id="sponsors-heading" className="text-xl font-semibold tracking-tight">
             感谢赞助
           </h2>
-          <ul className="mt-6 flex flex-wrap gap-x-8 gap-y-5">
+          <ul className="mt-6 grid grid-cols-[repeat(auto-fill,minmax(min(100%,6.5rem),1fr))] gap-x-3 gap-y-5">
             {sponsors.map((sponsor) => (
               <li key={sponsor.id} className="flex items-center gap-3">
                 <img
@@ -64,9 +64,9 @@ function Sponsor() {
                   width={48}
                   height={48}
                   loading="lazy"
-                  className="size-12 rounded-full object-cover"
+                  className="size-12 shrink-0 rounded-full object-cover"
                 />
-                <span className="text-base font-medium">{sponsor.name}</span>
+                <span className="text-base font-medium wrap-anywhere">{sponsor.name}</span>
               </li>
             ))}
           </ul>
