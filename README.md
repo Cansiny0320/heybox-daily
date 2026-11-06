@@ -5,7 +5,8 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT License"></a>
 </p>
 <p align="center">
-  <a href="#在线使用">在线使用</a> ·
+  <a href="https://heybox.cansiny.top/about">项目介绍</a> ·
+  <a href="https://heybox.cansiny.top/login">在线登录</a> ·
   <a href="#自部署">自部署</a> ·
   <a href="docs/usage.md">使用说明</a> ·
   <a href="https://github.com/Cansiny0320/heybox-daily/issues">问题反馈</a>
@@ -13,7 +14,7 @@
 
 ## 在线使用
 
-访问 [heybox.cansiny.top](https://heybox.cansiny.top)，登录后自动运行当天任务，之后每天自动执行。
+在线登录后会自动运行当天任务，之后每天自动执行。
 
 支持多账号登录和切换，可以查看任务结果、暂停、补跑或删除托管数据。退出登录会暂停当前账号的自动任务。
 

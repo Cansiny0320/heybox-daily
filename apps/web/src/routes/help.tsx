@@ -5,8 +5,8 @@ export const Route = createFileRoute("/help")({
   head: () =>
     publicPageHead(
       "/help",
-      "使用说明 · Heybox Daily",
-      "了解小黑盒自动签到的登录方式、执行时间、多账号管理、暂停与补跑，以及登录失效和 Docker 自部署的处理方式。",
+      "小黑盒每日任务使用说明 · Heybox Daily",
+      "查看 Heybox Daily 的小黑盒每日任务执行时间和奖励，了解如何重新登录、恢复自动运行和补跑未完成的任务。",
     ),
   component: Help,
 });
@@ -15,7 +15,7 @@ function Help() {
   return (
     <article className="mx-auto max-w-6xl px-6 pt-14 pb-16 sm:px-8 sm:pt-16">
       <div className="max-w-2xl">
-        <h1 className="text-3xl font-semibold tracking-tight">使用说明</h1>
+        <h1 className="text-3xl font-semibold tracking-tight">小黑盒每日任务使用说明</h1>
         <section className="mt-8 space-y-4 text-base leading-7">
           <h2 className="text-xl font-semibold">如何开始自动签到？</h2>
           <p>
@@ -26,12 +26,12 @@ function Help() {
             输入小黑盒手机号和短信验证码，按提示完成人机验证。首次登录成功后会开启自动任务，补跑当天未完成项。
           </p>
           <p>
-            之后每天北京时间 00:30
-            开始执行每日签到、分享帖子、分享游戏和分享游戏评价。执行进度和经验、H 币变化可在
+            之后每天北京时间 00:30 开始执行每日签到、分享帖子、分享游戏和分享游戏评价。打开
             <Link to="/tasks" className="underline underline-offset-4">
               我的任务
             </Link>
-            查看，以实际任务结果为准。
+            查看各项任务状态和本次获得的奖励。要核对经验或 H
+            币变化，可在账号菜单进入「历史记录」，按日期查看「实际收益」。
           </p>
         </section>
         <section className="mt-10 space-y-4 text-base leading-7">
@@ -56,7 +56,7 @@ function Help() {
             <details className="py-4">
               <summary className="cursor-pointer font-medium">登录会影响手机 APP 吗？</summary>
               <p className="mt-3 text-muted-foreground">
-                可能会让手机上的小黑盒退出登录。手机重新登录后，请留意下一次任务是否正常；网站提示登录失效时，自动任务会暂停，需要重新登录。
+                可能会让手机上的小黑盒退出登录。手机重新登录后，请留意网站上的任务状态。若「我的任务」提示需要重新登录小黑盒，点击提示旁的「重新登录」并完成短信验证。登录成功后会恢复自动任务，补跑当天未完成的项目。
               </p>
             </details>
             <details className="py-4">
@@ -68,7 +68,7 @@ function Help() {
             <details className="py-4">
               <summary className="cursor-pointer font-medium">任务失败了怎么办？</summary>
               <p className="mt-3 text-muted-foreground">
-                先查看“我的任务”中的失败原因。登录失效需要重新登录；接口暂时不可用时可稍后重试未完成任务。暂停状态下需先恢复自动任务。
+                先查看「我的任务」中任务列表下方的失败原因。如果页面显示预计自动重试时间，可以等到该时间再查看结果。接口暂时不可用时，可稍后点「重试未完成任务」。如果已暂停，打开「自动运行」即可补跑当天未完成的任务。页面提示已达当天执行上限时，等下一次定时执行。
               </p>
             </details>
             <details className="py-4">
@@ -88,7 +88,11 @@ function Help() {
           </div>
         </section>
         <p className="mt-8 text-sm leading-6 text-muted-foreground">
-          Heybox Daily 是独立开源项目，与小黑盒官方无隶属关系。数据处理方式见
+          Heybox Daily 是独立开源项目，与小黑盒官方无隶属关系。支持的任务和运行方式见
+          <Link to="/about" className="underline underline-offset-4">
+            Heybox Daily 项目介绍
+          </Link>
+          。数据处理方式见
           <Link to="/privacy" className="underline underline-offset-4">
             隐私说明
           </Link>
