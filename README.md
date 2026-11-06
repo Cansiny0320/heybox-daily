@@ -5,8 +5,8 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT License"></a>
 </p>
 <p align="center">
-  <a href="https://heybox.cansiny.top/about">项目介绍</a> ·
-  <a href="https://heybox.cansiny.top/login">在线登录</a> ·
+  <a href="https://heybox.cansiny.top/about">https://heybox.cansiny.top/about</a> ·
+  <a href="https://heybox.cansiny.top/login">https://heybox.cansiny.top/login</a> ·
   <a href="#自部署">自部署</a> ·
   <a href="docs/usage.md">使用说明</a> ·
   <a href="https://github.com/Cansiny0320/heybox-daily/issues">问题反馈</a>
