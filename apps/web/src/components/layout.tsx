@@ -125,7 +125,7 @@ export function Layout({ children }: { children: ReactNode }) {
           </div>
         )}
         <header className="border-b">
-          <div className="mx-auto flex h-20 max-w-6xl items-center justify-between gap-4 px-6 sm:px-8">
+          <div className="mx-auto flex min-h-20 max-w-6xl flex-wrap items-center justify-between gap-x-4 gap-y-2 px-6 py-4 sm:flex-nowrap sm:px-8 sm:py-0">
             <div className="flex shrink-0 items-center gap-3 text-foreground">
               <Link
                 to="/"
@@ -148,7 +148,7 @@ export function Layout({ children }: { children: ReactNode }) {
             </div>
             <nav
               aria-label="主导航"
-              className="flex min-w-0 items-center justify-end gap-3 text-base sm:gap-8"
+              className="ml-auto flex min-w-0 max-w-full items-center justify-end gap-3 text-base md:gap-8"
             >
               {account && (
                 <>
@@ -168,6 +168,17 @@ export function Layout({ children }: { children: ReactNode }) {
                   </Link>
                 </>
               )}
+              <a
+                href="https://image.cansiny.top/"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex shrink-0 items-center gap-0.5 whitespace-nowrap text-muted-foreground hover:text-foreground"
+              >
+                GPT 免费生图
+                <span className="-translate-y-2 rounded-full bg-orange-700 px-1.5 py-0.5 text-xs leading-none font-medium text-white">
+                  new
+                </span>
+              </a>
               <Link
                 to="/sponsor"
                 className="shrink-0 whitespace-nowrap text-muted-foreground hover:text-foreground"
@@ -180,7 +191,7 @@ export function Layout({ children }: { children: ReactNode }) {
                   fallback={
                     <Button
                       variant="ghost"
-                      className="h-11 max-w-44 gap-2.5 px-2 text-base"
+                      className="h-11 min-w-0 max-w-44 shrink gap-2.5 px-2 text-base"
                       disabled
                       aria-label="账号菜单"
                     >
