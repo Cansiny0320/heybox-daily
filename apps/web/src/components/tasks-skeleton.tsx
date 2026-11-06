@@ -1,4 +1,4 @@
-import { taskIds, taskNames } from "@heybox/contracts";
+import { taskIds, taskNames } from "@heybox/contracts/daily-tasks";
 
 function Skeleton({ className }: { className: string }) {
   return (
@@ -69,9 +69,6 @@ export function TasksSkeleton() {
         </div>
         <div className="mt-12">
           <h2 className="text-2xl font-semibold tracking-tight">抽奖活动</h2>
-          <div className="mt-5">
-            <ActivityListSkeleton />
-          </div>
         </div>
       </div>
     </section>

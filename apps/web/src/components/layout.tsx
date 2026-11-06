@@ -12,7 +12,6 @@ import {
 import { ChevronDown, TriangleAlert } from "lucide-react";
 import { Button } from "./ui/button";
 import { AccountAvatar } from "./account-avatar";
-import { authRequest } from "../lib/client";
 import { readAccounts, type Account } from "../lib/accounts";
 export type { Account } from "../lib/accounts";
 import { readableError } from "../lib/utils";
@@ -81,6 +80,7 @@ export function Layout({ children }: { children: ReactNode }) {
   async function switchAccount(target: Account) {
     setBusy(true);
     try {
+      const { authRequest } = await import("../lib/auth-client");
       await authRequest("heybox/switch", { account: target.account });
       window.location.assign("/tasks");
     } catch (e) {
@@ -94,6 +94,7 @@ export function Layout({ children }: { children: ReactNode }) {
     setBusy(true);
     setError("");
     try {
+      const { authRequest } = await import("../lib/auth-client");
       const result = await authRequest<{ account: string | null }>(
         remove ? "heybox/delete" : "heybox/logout",
         {

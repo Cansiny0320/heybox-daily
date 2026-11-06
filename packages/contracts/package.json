@@ -2,6 +2,9 @@
   "name": "@heybox/contracts",
   "private": true,
   "type": "module",
-  "exports": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./daily-tasks": "./src/daily-tasks.ts"
+  },
   "dependencies": { "zod": "4.6.7" }
 }

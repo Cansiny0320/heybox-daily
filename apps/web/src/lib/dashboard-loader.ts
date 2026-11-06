@@ -1,4 +1,4 @@
-import { beijingDate } from "@heybox/contracts";
+import { beijingDate } from "@heybox/contracts/daily-tasks";
 import type { client } from "./client.ts";
 
 export type DashboardData = Awaited<ReturnType<typeof client.dashboard>>;

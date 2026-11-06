@@ -1,4 +1,5 @@
-import { taskIds, type Outcome } from "@heybox/contracts";
+import type { Outcome } from "@heybox/contracts";
+import { taskIds } from "@heybox/contracts/daily-tasks";
 
 export const statusNames: Record<string, string> = {
   queued: "等待执行",

@@ -3,10 +3,9 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { LoginFailure, phoneSchema, type LoginProgress } from "@heybox/contracts";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
-import { authRequest } from "../lib/client";
+import { authRequest } from "../lib/auth-client";
 import { readableError } from "../lib/utils";
 import { useAccount, type Account } from "../components/layout";
-import { showCaptcha } from "../lib/captcha";
 import { privatePageHead } from "../lib/seo";
 import { isPreview } from "../lib/deployment";
 import {
@@ -163,6 +162,7 @@ function Login() {
     const controller = new AbortController();
     captchaAbort.current = controller;
     try {
+      const { showCaptcha } = await import("../lib/captcha");
       const proof = await showCaptcha(captcha.appId, captcha.expiresAt, controller.signal);
       if (!proof || controller.signal.aborted) return;
       const result = await authRequest<LoginResult>(

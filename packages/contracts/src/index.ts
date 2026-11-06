@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import { beijingDate, taskIds } from './daily-tasks.ts';
+export { DAILY_ATTEMPT_LIMIT, beijingDate, publicReasons, taskIds, taskNames } from './daily-tasks.ts';
 export { LoginTiming, loginTimingHeader, type LoginStage } from './login-timing.ts';
 
 export const phoneSchema = z.string().trim().transform(value => /^1[3-9]\d{9}$/.test(value) ? `+86${value}` : value)
@@ -6,9 +8,6 @@ export const phoneSchema = z.string().trim().transform(value => /^1[3-9]\d{9}$/.
 export const codeSchema = z.string().regex(/^\d{4,8}$/, '验证码应为 4 至 8 位数字');
 export const idSchema = z.string().uuid();
 export const bindingSchema = z.string().regex(/^[a-f0-9]{64}$/);
-export const DAILY_ATTEMPT_LIMIT = 5;
-export const taskIds = ['sign', '1', '19', '31'] as const;
-export const taskNames = { sign: '每日签到', '1': '分享帖子', '19': '分享游戏', '31': '分享游戏评价' };
 export const taskViewSchema = z.object({ id: z.enum(taskIds), state: z.enum(['waiting', 'finish']) });
 export const taskExecutionSchema = z.partialRecord(z.enum(taskIds), z.enum(['executed', 'skipped']));
 export const snapshotSchema = z.object({ tasks: z.array(taskViewSchema).length(4), exp: z.number(), coin: z.number(), battery: z.number().int().nonnegative().optional() });
@@ -110,10 +109,7 @@ export class LoginFailure extends Error {
   }
 }
 
-export function beijingDate(now = Date.now()) { return new Date(now + 8 * 3600_000).toISOString().slice(0, 10); }
 export function nextRunAt(now = Date.now()) {
   const today = Date.parse(`${beijingDate(now)}T00:30:00+08:00`);
   return today > now ? today : today + 86400_000;
 }
-export const publicReasons = { upstream: '小黑盒接口暂时不可用', timeout: '本次执行超时',
-  auth_expired: '小黑盒登录已失效，请重新登录', cancelled: '任务已停止', cross_day: '已跨日，等待今天的任务' };

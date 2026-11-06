@@ -1,6 +1,11 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { DAILY_ATTEMPT_LIMIT, taskIds, taskNames, publicReasons } from "@heybox/contracts";
+import {
+  DAILY_ATTEMPT_LIMIT,
+  taskIds,
+  taskNames,
+  publicReasons,
+} from "@heybox/contracts/daily-tasks";
 import { Button } from "../components/ui/button";
 import { Switch } from "../components/ui/switch";
 import { useAccount } from "../components/layout";

@@ -3,7 +3,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { boundedBody, privateKey, sameOrigin, serviceAuthorized } from "@heybox/hosting/security";
 import type { Env } from "../src/server/env.ts";
-import { authRequest } from "../src/lib/client.ts";
+import { authRequest } from "../src/lib/auth-client.ts";
 import { LoginFailure, LoginTiming, loginTimingHeader } from "@heybox/contracts";
 import type { SmsCooldown } from "../src/lib/login-cooldown.ts";
 
