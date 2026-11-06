@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { publicPageHead } from "../lib/seo";
 import { sponsorsSchema, type SponsorEntry } from "../lib/sponsors";
 
+const sponsorshipImageUrl = "https://heybox.cansiny.top/sponsors/sponsorship-20261101.webp";
+
 export const Route = createFileRoute("/sponsor")({
   head: () =>
     publicPageHead(
@@ -32,9 +34,9 @@ function Sponsor() {
       <p className="mt-4 text-base text-muted-foreground">
         网站的日常运行有服务器和数据库开销。如果你觉得好用，欢迎赞助支持。
       </p>
-      <a href="/sponsorship.png" target="_blank" rel="noreferrer" className="mt-10 block">
+      <a href={sponsorshipImageUrl} target="_blank" rel="noreferrer" className="mt-10 block">
         <img
-          src="/sponsors/sponsorship-20261101.webp"
+          src={sponsorshipImageUrl}
           width={1536}
           height={1024}
           alt="微信和支付宝赞助收款码"
@@ -42,12 +44,12 @@ function Sponsor() {
         />
       </a>
       <a
-        href="/sponsorship.png"
+        href={sponsorshipImageUrl}
         target="_blank"
         rel="noreferrer"
         className="mt-5 inline-flex items-center gap-1 text-base text-muted-foreground hover:text-foreground"
       >
-        查看原图
+        查看大图
         <ArrowUpRight className="size-3.5" />
       </a>
       {sponsors.length > 0 && (
