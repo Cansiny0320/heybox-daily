@@ -32,8 +32,8 @@ function About() {
         </h1>
         <p className="mt-6 text-lg leading-8 text-muted-foreground">
           Heybox Daily
-          支持每日签到、分享帖子、分享游戏和分享游戏评价。在线登录后自动执行，也可以通过 Docker
-          自部署。
+          是一个开源的小黑盒自动签到工具。用小黑盒手机号和短信验证码登录，即可免费开启在线托管，无需自备服务器。在线任务每天北京时间
+          00:30 开始执行，也可以用 Docker 自部署。
         </p>
         <div className="mt-8 flex flex-wrap items-center gap-6">
           <Link
@@ -46,21 +46,20 @@ function About() {
         <section className="mt-14 border-t pt-8 text-base leading-7">
           <h2 className="text-xl font-semibold">在线使用</h2>
           <p className="mt-4">
-            用小黑盒手机号和短信验证码登录，首次登录会补跑当天未完成的任务，之后每天北京时间 00:30
-            开始执行。
+            首次登录成功后会补跑当天未完成的任务。托管范围包括每日签到、分享帖子、分享游戏和分享游戏评价。
           </p>
           <p className="mt-4">
-            在线托管免费使用，支持在同一浏览器切换账号。每个账号单独管理任务，退出登录会暂停当前账号的自动任务。
+            支持在同一浏览器切换账号。每个账号单独管理任务，退出登录会暂停当前账号的自动任务。
           </p>
         </section>
         <section className="mt-10 border-t pt-8 text-base leading-7">
           <h2 className="text-xl font-semibold">怎么确认签到成功？</h2>
           <p className="mt-4">
-            登录后打开「我的任务」，查看「每日签到」是否显示「已完成」。桌面端的任务列表还会显示核验时间。「本次获得」会列出实际取得的奖励。要核对往日的执行状态和收益，可以从账号菜单打开「历史记录」。
+            打开「我的任务」，如果「每日签到」显示「已完成」，就表示已经核验成功。实际奖励可在「本次获得」查看。
           </p>
           <p className="mt-4">
             <Link to="/help" className="underline underline-offset-4">
-              查看小黑盒每日任务使用说明
+              查看签到核验和登录恢复步骤
             </Link>
           </p>
         </section>

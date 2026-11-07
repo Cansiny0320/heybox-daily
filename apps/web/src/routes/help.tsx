@@ -25,13 +25,20 @@ function Help() {
             </Link>
             输入小黑盒手机号和短信验证码，按提示完成人机验证。首次登录成功后会开启自动任务，补跑当天未完成项。
           </p>
+          <p>之后每天北京时间 00:30 开始执行每日签到、分享帖子、分享游戏和分享游戏评价。</p>
+        </section>
+        <section className="mt-10 space-y-4 text-base leading-7">
+          <h2 className="text-xl font-semibold">怎么确认小黑盒签到成功？</h2>
           <p>
-            之后每天北京时间 00:30 开始执行每日签到、分享帖子、分享游戏和分享游戏评价。打开
+            打开
             <Link to="/tasks" className="underline underline-offset-4">
               我的任务
             </Link>
-            查看各项任务状态和本次获得的奖励。要核对经验或 H
-            币变化，可在账号菜单进入「历史记录」，按日期查看「实际收益」。
+            ，查看「每日签到」是否显示「已完成」。这个状态以小黑盒返回的任务结果为准，桌面端还会显示核验时间。
+          </p>
+          <p>
+            「本次获得」会列出实际取得的奖励。要核对往日的执行状态、经验或 H
+            币，可在账号菜单进入「历史记录」，按日期查看任务结果和「实际收益」。
           </p>
         </section>
         <section className="mt-10 space-y-4 text-base leading-7">
@@ -54,9 +61,15 @@ function Help() {
               </p>
             </details>
             <details className="py-4">
-              <summary className="cursor-pointer font-medium">登录会影响手机 APP 吗？</summary>
+              <summary className="cursor-pointer font-medium">登录会影响手机 App 吗？</summary>
               <p className="mt-3 text-muted-foreground">
-                可能会让手机上的小黑盒退出登录。手机重新登录后，请留意网站上的任务状态。若「我的任务」提示需要重新登录小黑盒，点击提示旁的「重新登录」并完成短信验证。登录成功后会恢复自动任务，补跑当天未完成的项目。
+                在网站登录可能让手机上的小黑盒退出登录。手机重新登录后，可以到网站的「我的任务」查看是否需要重新验证账号。
+              </p>
+            </details>
+            <details className="py-4">
+              <summary className="cursor-pointer font-medium">小黑盒登录失效后怎么恢复？</summary>
+              <p className="mt-3 text-muted-foreground">
+                如果「我的任务」提示需要重新登录小黑盒，点击提示旁的「重新登录」并完成短信验证。验证成功后会恢复自动任务，补跑当天未完成的项目。
               </p>
             </details>
             <details className="py-4">
