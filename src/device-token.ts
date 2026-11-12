@@ -5,7 +5,7 @@ import { observeTokenNetwork } from './device-token-network.js';
 
 const sdkUrl = 'https://static.portal101.cn/dist/web/v3.0.0/fp.min.js';
 // Reviewed official SDK. Do not execute an upstream replacement in Node without review.
-const sdkSha256 = '7de91adbb7666216d9a72ba1c8655003e393aa5235f6345e399425cd78469a78';
+const sdkSha256 = '654b94891624c759ba1b887b39261d8e894144da5f56a6dc42b5b6e0d66562f9';
 const tokenPattern = /^B[A-Za-z0-9+/=_-]{88}$/;
 const deviceProfileUrl = 'https://fp-it.portal101.cn/deviceprofile/v4';
 const publicConfig = {

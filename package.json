@@ -1,6 +1,6 @@
 {
   "name": "heybox-daily",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "private": true,
   "description": "小黑盒每日签到和分享任务",
   "type": "module",
